@@ -30,7 +30,7 @@
 # CMake directives
 ######################################################################################
 
-#Require 2.6 or higher. 
+#Require 2.6 or higher.
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -43,9 +43,9 @@ PROJECT(libfreenect)
 set (PROJECT_VER_MAJOR 0)
 set (PROJECT_VER_MINOR 1)
 set (PROJECT_VER_PATCH 2)
-set (PROJECT_VER 
+set (PROJECT_VER
   "${PROJECT_VER_MAJOR}.${PROJECT_VER_MINOR}.${PROJECT_VER_PATCH}")
-set (PROJECT_APIVER 
+set (PROJECT_APIVER
   "${PROJECT_VER_MAJOR}.${PROJECT_VER_MINOR}")
 
 OPTION(BUILD_AUDIO "Build audio support" OFF)
@@ -86,6 +86,31 @@ if(BUILD_AUDIO)
   add_definitions(-DBUILD_AUDIO)
 endif()
 
+FIND_PACKAGE(Torch REQUIRED)
+IF(UNIX)
+  OPTION(WITH_RPATH "Build libraries with executable rpaths" ON)
+
+  IF(WITH_RPATH)
+    SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    FILE(RELATIVE_PATH Torch_INSTALL_BIN2LIB
+      "${Torch_INSTALL_BIN}" "${Torch_INSTALL_LIB}")
+    FILE(RELATIVE_PATH Torch_INSTALL_BIN2CPATH
+      "${Torch_INSTALL_BIN}" "${Torch_INSTALL_LUA_CPATH}")
+    IF(NOT APPLE)
+      OPTION(WITH_DYNAMIC_RPATH
+	"Build libraries with executable relative rpaths (\$ORIGIN)" ON )
+    ENDIF(NOT APPLE)
+    IF (WITH_DYNAMIC_RPATH OR APPLE)
+      SET(CMAKE_INSTALL_RPATH "\$ORIGIN/${Torch_INSTALL_BIN2LIB}")
+    ELSE (WITH_DYNAMIC_RPATH OR APPLE)
+      SET(CMAKE_INSTALL_RPATH "${Torch_INSTALL_LIB}")
+    ENDIF (WITH_DYNAMIC_RPATH OR APPLE)
+    SET(CMAKE_INSTALL_NAME_DIR "@executable_path/${Torch_INSTALL_BIN2LIB}")
+  ENDIF(WITH_RPATH)
+ENDIF(UNIX)
+
 if (WIN32)
    set(MATH_LIB "")
 else(WIN32)
@@ -93,7 +118,7 @@ else(WIN32)
 endif()
 
 ######################################################################################
-# CMake 
+# CMake
 ######################################################################################
 
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
